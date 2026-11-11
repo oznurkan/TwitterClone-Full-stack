@@ -1,0 +1,54 @@
+# Docker a oluşturulan ve local veritabanından kopyalanan db + docker da çalışan backend
+services:
+  db:
+    image: postgres:17
+    container_name: twitterclone-db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: twitterclone-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SERVER_PORT: ${SERVER_PORT}
+      CONTEXT_PATH: ${CONTEXT_PATH}
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+volumes:
+  pgdata:
+
+
+
+# Kendi bilgisayarımda localdedeki veritabanına bağlanırken kullanılacak yapı sadece dockerde çalışan backend
+#services:
+#  backend:
+#    build: ./backend
+#    container_name: twitterclone-backend
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      SERVER_PORT: ${SERVER_PORT}
+#      CONTEXT_PATH: ${CONTEXT_PATH}
+#      DB_URL: ${DB_URL}
+#      DB_USERNAME: ${DB_USERNAME}
+#      DB_PASSWORD: ${DB_PASSWORD}
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
